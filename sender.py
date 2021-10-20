@@ -58,7 +58,7 @@ def send_status(port, status, ip='127.0.0.1'):
         print("sended : {}".format(status))
         # data = s.recv(BUFFER_SIZE)
         s.close()
-        print("s closd _||")
+        #print("s closd _||")
         # print("received data: {}".format(data))
 
 

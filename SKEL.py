@@ -132,6 +132,7 @@ def skeletonizer(KP_global, EX_global, q):
     print("ID of process running worker1: {}".format(os.getpid()))
 
     cap = cv2.VideoCapture(0)
+    print("now i show you")
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
     print(frame_width)
@@ -139,11 +140,13 @@ def skeletonizer(KP_global, EX_global, q):
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
     with mp_pose.Pose(
-            static_image_mode=False,  # false for prediction
-            upper_body_only=False,
-            smooth_landmarks=True,
-            min_detection_confidence=0.8,
-            min_tracking_confidence=0.8) as pose:
+	static_image_mode = False,
+        # upper_body_only=upper_body_only,
+        model_complexity=0,
+        #enable_segmentation=enable_segmentation,#unespected
+	#smooth_landmark= True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
 
             start = time.time()
@@ -197,6 +200,7 @@ def skeletonizer(KP_global, EX_global, q):
             # invio streaming
             sender.stream(image)
             #sender.send_status(5002, "KP_success")
+            
 
             cv2.imshow('MediaPipe Pose', image)
             if cv2.waitKey(5) & 0xFF == 27:
