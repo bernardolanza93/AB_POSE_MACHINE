@@ -291,8 +291,8 @@ def evaluator(EX_global, q,string_from_tcp_ID):
             #print("{} string wrote in memory".format(ex_string_from_TCP))
             #print("EX_global.value", EX_global.value)
 
-        if EX_global.value != 0:
-            if ex_string != "":
+        if EX_global.value != 0: #gia modificato dalla scrittura in memoria dell esercizio
+            if ex_string != "": #ex string diventa un valore solo dopo il comando start che la genera a partire dall id
                 # controllo di aver letto con successo la memoria dopo il comando di start
 
                 #print("read from memory: {}".format(ex_string))
