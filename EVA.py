@@ -66,14 +66,15 @@ def KP_to_render_from_config_file(dictionary):
     KPS_to_render = []
     # print(type(dictionary["segments"]))
     # print(type(dictionary["eva_range"]))
-    for limb in dictionary["segments"]: #due giunti  o due distanze
+    for limb in dictionary["segments"]: #limb = arm L 
         # print("analizing arto: {}".format(arto))
 
-        kps = config_geometrical["ALIAS"][limb] #3 valori se angolo , 2 se distanza
+        kps = config_geometrical["ALIAS"][limb] # [22, 23, 26, 27, 30, 31]
 
         kps = [int(x) for x in kps.split(",")]
-        KPS_to_render.append(kps) #3 punti se giunto #2 se distanza
-    dictionary["KPS_to_render"] = KPS_to_render #avre,o in definitiva 6 valori (6 punti giunti) per due angolo o 4 punti per due distanze
+        KPS_to_render.append(kps) # 
+    dictionary["KPS_to_render"] = KPS_to_render #avre,o in definitiva 6 valori (6 punti giunti) per due angoli o 4 punti per due distanze  [[22, 23, 26, 27, 30, 31], [24, 25, 28, 29, 32, 33]]
+
 
     # print(dictionary)
     return dictionary
@@ -197,52 +198,17 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
 
         if len(kps_to_render) != 0:
             # print("dictionary: {}".format(dictionary))
-            '''
-            if len(kps_to_render[0]) == 2: # distanza tra giunti
             
-            for i in range(len(kps_to_render)):
-                # print("number of arms: {}".format(len(kps_to_render)))
-                
-                
-
-                segment = kps_to_render[i]
-                # print(kp[segment[5]]) #abbiamo 6 valori, 3 coordinate ergo len kps2rend = 2 arti o 2 distanze di cui ognuno (braccio[6], bracciospalla[6] spalla-gomito[4], spalla-polso[4])
-                #quindi se ci sono 4 segment e una distanza tra giunti [2 distanze 8 valori], se ci sono 2 segment è un angolo interno [2 arti 6 valori]
-                a = find_distance(segment[0],segment[1]segment[2]segment[3])
-                angle.append(a)
-                # print("angle from EVA : {}".format(angle))
-                p = np.interp(a, (10, 160), (100, 0))
-                per.append(p)
-                # Check for the dumbbell curls
-                # print("eva range 1 : {}".format(eva_range[1]))
-                # print(a)
-                # print("stage control: {}".format(stage))
-
-                if a > eva_range[1]:
-                    stage[i] = "down"
-
-                if a < eva_range[0] and stage[i] == "down":
-                    stage[i] = "up"
-                    count[i] += 1
-
-                print("COUNTING routine :  {} ".format(count))
-                # print("percentage : {} %".format(per))
-            # print("angle : {}".format(angle))
-            # print("stage : {}".format(stage))
-
-            return count, stage
-                    
-            elif len(kps_to_render) == 2:
-                '''
 
             for i in range(len(kps_to_render)): #due se due braccia 
                 # print("number of arms: {}".format(len(kps_to_render)))
                 
                 
 
-                segment = kps_to_render[i] #kp to render sono i punti fisici, quindi 3 se angolo due se distanza
-                # print(kp[segment[5]]) #abbiamo 6 valori, 3 coordinate ergo len kps2rend = 2 arti o 4 giunti di cui ognuno (braccio[6], bracciospalla[6] spalla[2],gomito[2], polso[2])
-                #quindi se ci sono 4 segment e una distanza tra giunti [4 punti 8 valori], se ci sono 2 segment è un angolo interno [2 arti 6 valori]
+                segment = kps_to_render[i]  [[22, 23, 26, 27, 30, 31], 
+
+                # print(kp[segment[5]]) 
+                
                 a = findAngle((kp[segment[0]], kp[segment[1]]), (kp[segment[2]], kp[segment[3]]),
                               (kp[segment[4]], kp[segment[5]])) #per ogni arto 
                 angle.append(a)
