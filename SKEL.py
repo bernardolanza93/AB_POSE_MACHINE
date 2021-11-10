@@ -103,7 +103,7 @@ def read_shared_mem_for_ex_string(mem_ex_value):
         return ex_string
 
 
-def landmarks2keypoints(landmarks, image):
+def landmarks2keypoints(landmarks, image): #deprecated
     image_width, image_height = image.shape[1], image.shape[0]
     keypoints = []
     for index, landmark in enumerate(landmarks.landmark):
