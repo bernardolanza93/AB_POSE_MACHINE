@@ -12,6 +12,25 @@ import statistics
 import queue
 
 
+def joint_distance_calculator(kps_to_render,kp):
+    distance = []
+    normalizer = math.sqrt(pow((kp[22]-kp[24]),2) + pow((kp[23]-kp[25]),2)) #spalle
+
+    for i in range(len(kps_to_render)):
+        # print("number of arms: {}".format(len(kps_to_render)))
+
+        segment = kps_to_render[i]
+        #  x1, y1, x2, y2
+        xa =kp[segment[0]]
+        ya = kp[segment[1]]
+        xb = kp[segment[2]]
+        yb = kp[segment[3]]
+       #((kp[segment[0]], kp[segment[1]]), (kp[segment[2]], kp[segment[3]])
+        distance.append((math.sqrt(pow((xa-xb),2) + pow((ya-yb),2)))/normalizer)
+    return distance
+
+
+
 def no_ex_cycle_control(string_from_tcp_ID,ex_string):
     while ex_string == "":
         ex_string = TCP_listen_check_4_string(string_from_tcp_ID, ex_string)
