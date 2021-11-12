@@ -213,45 +213,53 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
         eva_range = dictionary["eva_range"]
         kps_to_render = dictionary["KPS_to_render"]
         angle = []
+
         per = []
+        distance = []
+
 
         if len(kps_to_render) != 0:
-            # print("dictionary: {}".format(dictionary))
-            
+                # print("dictionary: {}".format(dictionary))
+            if len(kps_to_render[0]) == 4:
 
-            for i in range(len(kps_to_render)): #due se due braccia 
-                # print("number of arms: {}".format(len(kps_to_render)))
-                
-                
+                distance = joint_distance_calculator(kps_to_render,kp)
+                print("distance is :", distance)
+                return count, stage
+                # distance
+            elif len(kps_to_render[0]) == 6:
+                print("angle")
 
-                segment = kps_to_render[i]  [[22, 23, 26, 27, 30, 31], 
+            # angle:
 
-                # print(kp[segment[5]]) 
-                
-                a = findAngle((kp[segment[0]], kp[segment[1]]), (kp[segment[2]], kp[segment[3]]),
-                              (kp[segment[4]], kp[segment[5]])) #per ogni arto 
-                angle.append(a)
-                # print("angle from EVA : {}".format(angle))
-                p = np.interp(a, (10, 160), (100, 0))
-                per.append(p)
-                # Check for the dumbbell curls
-                # print("eva range 1 : {}".format(eva_range[1]))
-                # print(a)
-                # print("stage control: {}".format(stage))
+                for i in range(len(kps_to_render)):
+                    # print("number of arms: {}".format(len(kps_to_render)))
 
-                if a > eva_range[1]:
-                    stage[i] = "down"
+                    segment = kps_to_render[i]
+                    # print(kp[segment[5]])
+                    a = findAngle((kp[segment[0]], kp[segment[1]]), (kp[segment[2]], kp[segment[3]]),
+                                  (kp[segment[4]], kp[segment[5]]))
+                    angle.append(a)
+                    # print("angle from EVA : {}".format(angle))
+                    p = np.interp(a, (10, 160), (100, 0))
+                    per.append(p)
+                    # Check for the dumbbell curls
+                    # print("eva range 1 : {}".format(eva_range[1]))
+                    # print(a)
+                    # print("stage control: {}".format(stage))
 
-                if a < eva_range[0] and stage[i] == "down":
-                    stage[i] = "up"
-                    count[i] += 1
+                    if a > eva_range[1]:
+                        stage[i] = "down"
 
-                print("COUNTING routine :  {} ".format(count))
-                # print("percentage : {} %".format(per))
-            # print("angle : {}".format(angle))
-            # print("stage : {}".format(stage))
+                    if a < eva_range[0] and stage[i] == "down":
+                        stage[i] = "up"
+                        count[i] += 1
 
-            return count, stage
+                    print("COUNTING routine :  {} ".format(count))
+                    # print("percentage : {} %".format(per))
+                # print("angle : {}".format(angle))
+                # print("stage : {}".format(stage))
+
+                return count, stage
         else:
             print("no kps to render dictionary error, dictionary: {}".format(dictionary))
 
