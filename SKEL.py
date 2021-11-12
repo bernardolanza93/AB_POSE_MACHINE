@@ -73,18 +73,21 @@ def KP_renderer_on_frame(ex_string, kp, img):
     if not ex_string:
         print("no exercise // no rendering")
     else:
+
         kp_2_rend = ex_string_to_config_param(ex_string)
+
         #print("kp_2_rend : ", kp_2_rend)
 
         for segment in kp_2_rend:
 
             x = []
             y = []
-            for i in range(0, 5, 2):
+            #print("len segment ; ", len(segment))
+            for i in range(0, len(segment)-1, 2): #####|||||||VA inserito nello script di jetson
                 x.append(kp[segment[i]])
                 y.append(kp[segment[i + 1]])
 
-            for i in range(2):
+            for i in range(int(len(segment)/2) - 1 ):
                 cv2.line(img, (x[i], y[i]), (x[i + 1], y[i + 1]), (255, 255, 255), 3)
 
             for i in range(len(x)):
