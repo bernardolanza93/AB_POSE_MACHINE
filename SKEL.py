@@ -188,14 +188,22 @@ def skeletonizer(KP_global, EX_global, q):
             if not success1:
                 return False  
             
+            ''' 
+            #due tipi di stichetr diversi quado le camere saranno montate stai pronto e usane uno.
             
-            
-            
+            stitcher = cv2.createStitcher(False)
+            img = stitcher.stitch((img1,img2))
 
+            stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
+            stitcher.setPanoConfidenceThresh(0.0) # might be too aggressive for real example 
+            status, result = stitcher.stitch((foo,bar))
+            assert status == 0 # Verify returned status is 'success'
+                
+            '''
 
 
             vis = np.concatenate((image,image1), axis= 0)
-            cv2.imshow('MediaPiffpe Pose', vis)
+            
             vis = cv2.cvtColor(cv2.flip(vis, 1), cv2.COLOR_BGR2RGB)
             print("vis creted")
             
