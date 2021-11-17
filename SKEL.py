@@ -6,6 +6,7 @@ import cv2
 import os
 import time
 import configparser
+import numpy as np
 
 
 def ID_to_ex_string(ID):
@@ -38,7 +39,6 @@ def KP_to_render_from_config_file(segments):
     for arto in segments:
         # print("analizing arto: {}".format(arto))
 
-
         kps = config_geometrical["ALIAS"][arto]
 
         kps = [int(x) for x in kps.split(",")]
@@ -54,7 +54,6 @@ def ex_string_to_config_param(ex_string):
     config_sk.read('exercise_info.ini')
     sections = config_sk.sections()
     # print("sections are : {}".format(sections))
-
 
     for exercise in sections:
 
@@ -96,7 +95,6 @@ def KP_renderer_on_frame(ex_string, kp, img):
                 cv2.circle(img, (x[i], y[i]), 10, (0, 0, 255), cv2.FILLED)
                 cv2.circle(img, (x[i], y[i]), 15, (0, 0, 255), 2)
 
-
 def read_shared_mem_for_ex_string(mem_ex_value):
     if mem_ex_value == 0:
         ex_string = ""
@@ -108,7 +106,7 @@ def read_shared_mem_for_ex_string(mem_ex_value):
         return ex_string
 
 
-def landmarks2keypoints(landmarks, image):
+def landmarks2keypoints(landmarks, image): # deprecated
     image_width, image_height = image.shape[1], image.shape[0]
     keypoints = []
     for index, landmark in enumerate(landmarks.landmark):
@@ -135,45 +133,87 @@ def landmarks2KP(landmarks, image):
 def skeletonizer(KP_global, EX_global, q):
     # printing process id
     print("ID of process running worker1: {}".format(os.getpid()))
+    
+    width = 720
+    height = 480
 
-    cap = cv2.VideoCapture(0)
-    frame_width = int(cap.get(3))
-    frame_height = int(cap.get(4))
-    print(frame_width)
-    print(frame_height)
+    gst_str1 = ('nvarguscamerasrc sensor-id=0 ! ' + 'video/x-raw(memory:NVMM), ' +
+          'width=(int)1280, height=(int)720, ' +
+          'format=(string)NV12, framerate=(fraction)30/1 ! ' + 
+          'nvvidconv flip-method=2 ! ' + 
+          'video/x-raw, width=(int){}, height=(int){}, ' + 
+          'format=(string)BGRx ! ' +
+          'videoconvert ! appsink').format(width, height)
+    gst_str2 = ('nvarguscamerasrc sensor-id=1 ! ' + 'video/x-raw(memory:NVMM), ' +
+          'width=(int)1280, height=(int)720, ' +
+          'format=(string)NV12, framerate=(fraction)30/1 ! ' + 
+          'nvvidconv flip-method=2 ! ' + 
+          'video/x-raw, width=(int){}, height=(int){}, ' + 
+          'format=(string)BGRx ! ' +
+          'videoconvert ! appsink').format(width, height)
+
+
+
+    cap = cv2.VideoCapture(gst_str1, cv2.CAP_GSTREAMER)
+
+    cap1 = cv2.VideoCapture(gst_str2, cv2.CAP_GSTREAMER) 
+    print("now i show you")
+    frame_width2 = int(cap.get(3))
+    frame_height2 = int(cap.get(4))
+    frame_width1 = int(cap1.get(3))
+    frame_height1 = int(cap1.get(4))
+    frame_width = int(cap1.get(3))
+    frame_height = int(cap1.get(4))*2
+
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
     with mp_pose.Pose(
-            static_image_mode=False,  # false for prediction
-            upper_body_only=False,
-            smooth_landmarks=True,
-            min_detection_confidence=0.8,
-            min_tracking_confidence=0.8) as pose:
-        while cap.isOpened():
+	static_image_mode = False,
+        # upper_body_only=upper_body_only,
+        model_complexity=0,
+        #enable_segmentation=enable_segmentation,#unespected
+	#smooth_landmark= True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5) as pose:
+        while cap.isOpened() and cap1.isOpened():
 
             start = time.time()
             success, image = cap.read()
+            success1, image1 = cap1.read()
 
             if not success:
                 # print("Ignoring empty camera frame.")
                 # If loading a video, use 'break' instead of 'continue'.
                 return False
-            image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
+            if not success1:
+                return False  
+            
+            
+            
+            
+
+
+
+            vis = np.concatenate((image,image1), axis= 0)
+            cv2.imshow('MediaPiffpe Pose', vis)
+            vis = cv2.cvtColor(cv2.flip(vis, 1), cv2.COLOR_BGR2RGB)
+            print("vis creted")
+            
             # To improve performance, optionally mark the image as not writeable to
             # pass by reference.
-            image.flags.writeable = False
-            results = pose.process(image)
+            vis.flags.writeable = False
+            results = pose.process(vis)
 
             # Draw the pose annotation on the image.
-            image.flags.writeable = True
-            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            vis.flags.writeable = True
+            vis = cv2.cvtColor(vis, cv2.COLOR_RGB2BGR)
             end = time.time()
             seconds = end - start
             fps = 1 / seconds
-            cv2.putText(image, 'FPS: {}'.format(int(fps)), (frame_width - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
+            cv2.putText(vis, 'FPS: {}'.format(int(fps)), (frame_width - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
                         255)
             # Render detections
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+            mp_drawing.draw_landmarks(vis, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
                                       )
@@ -183,7 +223,7 @@ def skeletonizer(KP_global, EX_global, q):
                 # svuoto queue
                 while not q.empty():
                     bit = q.get()
-                kp = landmarks2KP(results.pose_landmarks, image)
+                kp = landmarks2KP(results.pose_landmarks, vis)
                 if q.full():
                     print("impossible to insert data in full queue")
                 else:
@@ -197,13 +237,14 @@ def skeletonizer(KP_global, EX_global, q):
                 ex_string = read_shared_mem_for_ex_string(EX_global.value)
                 # render in front of ex_string
                 if ex_string != "":
-                    KP_renderer_on_frame(ex_string, kp, image)
+                    KP_renderer_on_frame(ex_string, kp, vis)
 
             # invio streaming
-            sender.stream(image)
+            sender.stream(vis)
             #sender.send_status(5002, "KP_success")
+            
 
-            cv2.imshow('MediaPipe Pose', image)
+            cv2.imshow('MediaPipe Pose', vis)
             if cv2.waitKey(5) & 0xFF == 27:
                 return False
 
