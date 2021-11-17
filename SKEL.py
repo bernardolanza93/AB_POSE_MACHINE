@@ -38,6 +38,7 @@ def KP_to_render_from_config_file(segments):
     for arto in segments:
         # print("analizing arto: {}".format(arto))
 
+
         kps = config_geometrical["ALIAS"][arto]
 
         kps = [int(x) for x in kps.split(",")]
@@ -53,6 +54,7 @@ def ex_string_to_config_param(ex_string):
     config_sk.read('exercise_info.ini')
     sections = config_sk.sections()
     # print("sections are : {}".format(sections))
+
 
     for exercise in sections:
 
@@ -106,7 +108,7 @@ def read_shared_mem_for_ex_string(mem_ex_value):
         return ex_string
 
 
-def landmarks2keypoints(landmarks, image): #deprecated
+def landmarks2keypoints(landmarks, image):
     image_width, image_height = image.shape[1], image.shape[0]
     keypoints = []
     for index, landmark in enumerate(landmarks.landmark):
@@ -135,7 +137,6 @@ def skeletonizer(KP_global, EX_global, q):
     print("ID of process running worker1: {}".format(os.getpid()))
 
     cap = cv2.VideoCapture(0)
-    print("now i show you")
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
     print(frame_width)
@@ -143,13 +144,11 @@ def skeletonizer(KP_global, EX_global, q):
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
     with mp_pose.Pose(
-	static_image_mode = False,
-        # upper_body_only=upper_body_only,
-        model_complexity=0,
-        #enable_segmentation=enable_segmentation,#unespected
-	#smooth_landmark= True,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5) as pose:
+            static_image_mode=False,  # false for prediction
+            upper_body_only=False,
+            smooth_landmarks=True,
+            min_detection_confidence=0.8,
+            min_tracking_confidence=0.8) as pose:
         while cap.isOpened():
 
             start = time.time()
@@ -203,7 +202,6 @@ def skeletonizer(KP_global, EX_global, q):
             # invio streaming
             sender.stream(image)
             #sender.send_status(5002, "KP_success")
-            
 
             cv2.imshow('MediaPipe Pose', image)
             if cv2.waitKey(5) & 0xFF == 27:

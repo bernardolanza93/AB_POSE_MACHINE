@@ -9,7 +9,6 @@ from datetime import datetime
 import receiver
 import sender
 import statistics
-import queue
 
 
 def joint_distance_calculator(kps_to_render,kp):
@@ -85,15 +84,16 @@ def KP_to_render_from_config_file(dictionary):
     KPS_to_render = []
     # print(type(dictionary["segments"]))
     # print(type(dictionary["eva_range"]))
-    for limb in dictionary["segments"]: #limb = arm L 
+    for limb in dictionary["segments"]:
         # print("analizing arto: {}".format(arto))
 
-        kps = config_geometrical["ALIAS"][limb] # [22, 23, 26, 27, 30, 31]
+        kps = config_geometrical["ALIAS"][limb]
 
         kps = [int(x) for x in kps.split(",")]
-        KPS_to_render.append(kps) # 
-    dictionary["KPS_to_render"] = KPS_to_render #avre,o in definitiva 6 valori (6 punti giunti) per due angoli o 4 punti per due distanze  [[22, 23, 26, 27, 30, 31], [24, 25, 28, 29, 32, 33]]
-
+        KPS_to_render.append(kps)
+    dictionary["KPS_to_render"] = KPS_to_render
+    print("kps to render : after alias association",KPS_to_render)
+    print(" one kps to render : after alias", KPS_to_render[0])
 
     # print(dictionary)
     return dictionary
@@ -112,7 +112,7 @@ def ex_string_to_config_param(ex_string):
         if exercise == ex_string:
             # config.get("test", "foo")
 
-            segments = config.get(exercise, 'segments_to_render') #[arm_r, polso_gomito_l ecc..]
+            segments = config.get(exercise, 'segments_to_render')
             segments = segments.split(',')
             eva_range = config.get(exercise, 'evaluation_range')
             eva_range = [int(x) for x in eva_range.split(",")]
@@ -133,23 +133,15 @@ def ex_string_to_config_param(ex_string):
     return dictionary
 
 
-def wait_for_keypoints(queuekp):
-    keypoints = []
+def wait_for_keypoints(queue):
+    while queue.empty():
+        print("no KP data aviable; queue empty")  # si triggera se non funziona piu lo skeleton
 
-    while not keypoints:
-        
-        try:
-            keypoints = queuekp.get(False)
-        except queue.Empty:
-            #print("no KP data aviable: queue empty")
-            pass
-
-        else:
-
-            if not keypoints:
-                print("no valid kp")
-            else:
-                return keypoints
+    keypoints = queue.get(False)
+    if not keypoints:
+        print("no valid kp")
+    else:
+        return keypoints
 
 
 def check_for_string_in_memory(multiprocessing_value_slot):
@@ -215,7 +207,7 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
         angle = []
 
         per = []
-        distance = []
+
 
 
         if len(kps_to_render) != 0:
@@ -224,8 +216,37 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
 
                 distance = joint_distance_calculator(kps_to_render,kp)
                 print("distance is :", distance)
+                print("eva range", eva_range)
+
+                for val in range(len(distance)):
+
+
+                    # print("angle from EVA : {}".format(angle))
+                    p = np.interp(distance[val], (eva_range[1], eva_range[0]), (100, 0))
+                    per.append(p)
+                    # Check for the dumbbell curls
+                    # print("eva range 1 : {}".format(eva_range[1]))
+                    # print(a)
+                    # print("stage control: {}".format(stage))
+                    print("dist_eva: ", distance[val], (eva_range[1])/100)
+
+                    if distance[val] > (eva_range[1])/100:
+
+                        stage[val] = "down"
+
+                    if distance[val] < (eva_range[0])/100 and stage[val] == "down":
+                        stage[val] = "up"
+                        count[val] += 1
+
+                    print("COUNTING routine :  {} ".format(count))
+
                 return count, stage
                 # distance
+
+
+
+
+
             elif len(kps_to_render[0]) == 6:
                 print("angle")
 
@@ -264,11 +285,12 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
             print("no kps to render dictionary error, dictionary: {}".format(dictionary))
 
 
+
 def evaluator(EX_global, q,string_from_tcp_ID):
     # printing process id
     print("ID of process running evaluator: {}".format(os.getpid()))
 
-    #time.sleep(3)
+    time.sleep(1)
     kp = []
 
     stage = ["", ""]
@@ -279,7 +301,7 @@ def evaluator(EX_global, q,string_from_tcp_ID):
 
     while True:
 
-        #time.sleep(0.5)
+        time.sleep(0.1)
         ex_string_from_TCP = TCP_listen_check_4_string(string_from_tcp_ID,ex_string_from_TCP)
         #print("TCP ex ID : ", string_from_tcp_ID.value)
 
@@ -289,7 +311,7 @@ def evaluator(EX_global, q,string_from_tcp_ID):
             #print("count = {}".format(count))
 
         elif ex_string_from_TCP == "stop":
-            #print("stop command detected")
+            print("stop command detected")
             # refreshing parameter of exercise
             ex_string_from_TCP = ""
             count = [0, 0]
@@ -300,20 +322,20 @@ def evaluator(EX_global, q,string_from_tcp_ID):
             ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)
 
         elif ex_string_from_TCP == "pause":
-            #print("pause command detected")
+            print("pause command detected")
             # rimane comunque l esercizio in memoria
             ex_string_from_TCP = ""
-            #print("count(pause) = {}".format(count))
+            print("count(pause) = {}".format(count))
             ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)
 
         elif ex_string_from_TCP == "start":
             if EX_global.value != 0:
                 ex_string = check_for_string_in_memory(EX_global.value)
-                #print("an exercise is under evaluation, starting...", ex_string)
+                print("an exercise is under evaluation, starting...", ex_string)
                 #print("count = {}".format(count))
 
             else:
-                #print("start command error: no exercise selected, waiting for a selection before start")
+                print("start command error: no exercise selected, waiting for a selection before start")
                 ex_string_from_TCP = ""
                 #print("count = {}".format(count))
                 ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)  # da togliere
@@ -321,14 +343,14 @@ def evaluator(EX_global, q,string_from_tcp_ID):
         else:
 
             EX_global.value = write_ex_string_in_shared_memory(ex_string_from_TCP)
-            #print("{} string wrote in memory".format(ex_string_from_TCP))
-            #print("EX_global.value", EX_global.value)
+            print("{} string wrote in memory".format(ex_string_from_TCP))
+            print("EX_global.value", EX_global.value)
 
-        if EX_global.value != 0: #gia modificato dalla scrittura in memoria dell esercizio
-            if ex_string != "": #ex string diventa un valore solo dopo il comando start che la genera a partire dall id
+        if EX_global.value != 0:
+            if ex_string != "":
                 # controllo di aver letto con successo la memoria dopo il comando di start
 
-                #print("read from memory: {}".format(ex_string))
+                print("read from memory: {}".format(ex_string))
 
                 kp = wait_for_keypoints(q)
 

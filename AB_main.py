@@ -22,14 +22,14 @@ def init():
     config = configparser.RawConfigParser()
     config.read('/home/bernardo/PycharmProjects/AB_POSE_MACHINE/config.ini')
 
-    #PORTS_INFO = dict(config.items('PORTS'))
-    #print("Configuration file : {}".format(PORTS_INFO))
-    #EX_INFO = dict(config.items('ALIAS'))#SEGMENT
-    #print("Configuration file : {}".format(EX_INFO))
+    PORTS_INFO = dict(config.items('PORTS'))
+    print("Configuration file : {}".format(PORTS_INFO))
+    EX_INFO = dict(config.items('ALIAS'))#SEGMENT
+    print("Configuration file : {}".format(EX_INFO))
 
 
 
-    #return PORTS_INFO
+    return PORTS_INFO
 
 
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     string_from_tcp_ID = multiprocessing.Value("i", 0)
 
-    #ports_info = init()
+    ports_info = init()
     # printing main program process id
     print("ID of main process: {}".format(os.getpid()))
     #A variant of Queue that retrieves most recently added entriesfirst(last in, firstout).
