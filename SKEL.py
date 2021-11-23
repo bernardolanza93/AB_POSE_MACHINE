@@ -253,7 +253,7 @@ def skeletonizer(KP_global, EX_global, q):
                     KP_renderer_on_frame(ex_string, kp, vis)
 
             # invio streaming // fs e la classe, udp stream e la funzione, baipasso il main dell file sender
-            fs.udp_frame(frame)
+            fs.udp_frame(vis)
             #sender.send_status(5002, "KP_success")
             
 
