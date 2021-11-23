@@ -155,6 +155,11 @@ def skeletonizer(KP_global, EX_global, q):
 
 
     cap = cv2.VideoCapture(gst_str1, cv2.CAP_GSTREAMER)
+    #qui inserisco la nuova inizializzazione delle porte per lo streaming 
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    port = 12345
+
+    fs = FrameSegment(s, port)
 
     cap1 = cv2.VideoCapture(gst_str2, cv2.CAP_GSTREAMER) 
     print("now i show you")
@@ -247,8 +252,8 @@ def skeletonizer(KP_global, EX_global, q):
                 if ex_string != "":
                     KP_renderer_on_frame(ex_string, kp, vis)
 
-            # invio streaming
-            sender.stream(vis)
+            # invio streaming // fs e la classe, udp stream e la funzione, baipasso il main dell file sender
+            fs.udp_frame(frame)
             #sender.send_status(5002, "KP_success")
             
 
