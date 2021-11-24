@@ -7,6 +7,79 @@ import os
 import time
 import configparser
 import numpy as np
+import socket
+import imutils
+
+
+class Stitcher:
+  def __init__(self):
+  # determine if we are using OpenCV v3.X and initialize the
+  # cached homography matrix
+	  self.isv3 = imutils.is_cv3()
+	  self.cachedH = None
+  def detectAndDescribe(self, image):
+    # convert the image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # check to see if we are using OpenCV 3.X
+    #if self.isv3:
+    # detect and extract features from the image
+    descriptor = cv2.xfeatures2d.SIFT_create()
+    (kps, features) = descriptor.detectAndCompute(image, None)
+    # arrays
+    kps = np.float32([kp.pt for kp in kps])
+    # return a tuple of keypoints and features
+    return (kps, features)
+  def matchKeypoints(self, kpsA, kpsB, featuresA, featuresB,
+		ratio, reprojThresh):
+		# compute the raw matches and initialize the list of actual
+		# matches
+    matcher = cv2.DescriptorMatcher_create("BruteForce")
+    rawMatches = matcher.knnMatch(featuresA, featuresB, 2)
+    matches = []
+    # loop over the raw matches
+    for m in rawMatches:
+	# ensure the distance is within a certain ratio of each
+	# other (i.e. Lowe's ratio test)
+        if len(m) == 2 and m[0].distance < m[1].distance * ratio:
+            matches.append((m[0].trainIdx, m[0].queryIdx))
+    if len(matches) > 4:
+	# construct the two sets of points
+        ptsA = np.float32([kpsA[i] for (_, i) in matches])
+        ptsB = np.float32([kpsB[i] for (i, _) in matches])
+	# compute the homography between the two sets of points
+        (H, status) = cv2.findHomography(ptsA, ptsB, cv2.RANSAC,reprojThresh)
+	# return the matches along with the homograpy matrix
+	# and status of each matched point
+        return (matches, H, status)
+    # otherwise, no homograpy could be computed
+    return None
+  
+  def stitch(self, images, ratio=0.75, reprojThresh=4.0):
+    # unpack the images
+    (imageB, imageA) = images
+    # if the cached homography matrix is None, then we need to
+    # apply keypoint matching to construct it
+    if self.cachedH is None:
+        # detect keypoints and extract
+        (kpsA, featuresA) = self.detectAndDescribe(imageA)
+        (kpsB, featuresB) = self.detectAndDescribe(imageB)
+        # match features between the two images
+        M = self.matchKeypoints(kpsA, kpsB, featuresA, featuresB, ratio, reprojThresh)
+        # if the match is None, then there aren't enough matched
+        # keypoints to create a panorama
+        if M is None:
+          return None
+        # cache the homography matrix
+        self.cachedH = M[1]
+        # apply a perspective transform to stitch the images together
+        # using the cached homography matrix
+    result = cv2.warpPerspective(imageA, self.cachedH,
+      (imageA.shape[1] + imageB.shape[1], imageA.shape[0]))
+    result[0:imageB.shape[0], 0:imageB.shape[1]] = imageB
+    # return the stitched image
+    return result 
+
+
 
 
 def ID_to_ex_string(ID):
@@ -134,8 +207,8 @@ def skeletonizer(KP_global, EX_global, q):
     # printing process id
     print("ID of process running worker1: {}".format(os.getpid()))
     
-    width = 720
-    height = 480
+    width = 480
+    height = 240
 
     gst_str1 = ('nvarguscamerasrc sensor-id=0 ! ' + 'video/x-raw(memory:NVMM), ' +
           'width=(int)1280, height=(int)720, ' +
@@ -152,16 +225,19 @@ def skeletonizer(KP_global, EX_global, q):
           'format=(string)BGRx ! ' +
           'videoconvert ! appsink').format(width, height)
 
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    port = 5000
+
+    fs = sender.FrameSegment(s, port)
+    stitcher = Stitcher()
+    
+
 
 
     cap = cv2.VideoCapture(gst_str1, cv2.CAP_GSTREAMER)
-    #qui inserisco la nuova inizializzazione delle porte per lo streaming 
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    port = 12345
-
-    fs = FrameSegment(s, port)
 
     cap1 = cv2.VideoCapture(gst_str2, cv2.CAP_GSTREAMER) 
+    
     print("now i show you")
     frame_width2 = int(cap.get(3))
     frame_height2 = int(cap.get(4))
@@ -192,41 +268,51 @@ def skeletonizer(KP_global, EX_global, q):
                 return False
             if not success1:
                 return False  
+            image = cv2.rotate(image,cv2.ROTATE_90_CLOCKWISE)
+            image1 = cv2.rotate(image1,cv2.ROTATE_90_CLOCKWISE)
             
-            ''' 
+             
             #due tipi di stichetr diversi quado le camere saranno montate stai pronto e usane uno.
+            '''
             
             stitcher = cv2.createStitcher(False)
-            img = stitcher.stitch((img1,img2))
-
-            stitcher = cv2.Stitcher.create(cv2.Stitcher_PANORAMA)
-            stitcher.setPanoConfidenceThresh(0.0) # might be too aggressive for real example 
-            status, result = stitcher.stitch((foo,bar))
-            assert status == 0 # Verify returned status is 'success'
-                
+            sti = stitcher.stitch((image,image1))
             '''
-
-
-            vis = np.concatenate((image,image1), axis= 0)
             
-            vis = cv2.cvtColor(cv2.flip(vis, 1), cv2.COLOR_BGR2RGB)
-            print("vis creted")
+            
+
+            
+            
+            result = stitcher.stitch([image, image1])
+            if result is None:
+                print("[INFO] homography could not be computed")
+                break
+            
+            #assert status == 0 # Verify returned status is 'success'
+                
+            
+
+
+            #sti = np.concatenate((image,image1[550:720, 0:480]), axis= 0)
+            
+            sti = cv2.cvtColor(cv2.flip(result, 1), cv2.COLOR_BGR2RGB)
+            #print("sti creted")
             
             # To improve performance, optionally mark the image as not writeable to
             # pass by reference.
-            vis.flags.writeable = False
-            results = pose.process(vis)
+            #vis.flags.writeable = False
+            results = pose.process(sti)
 
             # Draw the pose annotation on the image.
-            vis.flags.writeable = True
-            vis = cv2.cvtColor(vis, cv2.COLOR_RGB2BGR)
+            sti.flags.writeable = True
+            sti = cv2.cvtColor(sti, cv2.COLOR_RGB2BGR)
             end = time.time()
             seconds = end - start
             fps = 1 / seconds
-            cv2.putText(vis, 'FPS: {}'.format(int(fps)), (frame_width - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
+            cv2.putText(sti, 'FPS: {}'.format(int(fps)), (frame_width - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
                         255)
             # Render detections
-            mp_drawing.draw_landmarks(vis, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+            mp_drawing.draw_landmarks(sti, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
                                       mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                       mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
                                       )
@@ -236,7 +322,7 @@ def skeletonizer(KP_global, EX_global, q):
                 # svuoto queue
                 while not q.empty():
                     bit = q.get()
-                kp = landmarks2KP(results.pose_landmarks, vis)
+                kp = landmarks2KP(results.pose_landmarks, sti)
                 if q.full():
                     print("impossible to insert data in full queue")
                 else:
@@ -250,17 +336,18 @@ def skeletonizer(KP_global, EX_global, q):
                 ex_string = read_shared_mem_for_ex_string(EX_global.value)
                 # render in front of ex_string
                 if ex_string != "":
-                    KP_renderer_on_frame(ex_string, kp, vis)
+                    KP_renderer_on_frame(ex_string, kp, sti)
 
-            # invio streaming // fs e la classe, udp stream e la funzione, baipasso il main dell file sender
-            fs.udp_frame(vis)
+            # invio streaming
+            fs.udp_frame(sti)
             #sender.send_status(5002, "KP_success")
             
 
-            cv2.imshow('MediaPipe Pose', vis)
+            cv2.imshow('MediaPipe Pose', sti)
             if cv2.waitKey(5) & 0xFF == 27:
                 return False
 
         cap.release()
+        s.close()
 
         cv2.destroyAllWindows()
