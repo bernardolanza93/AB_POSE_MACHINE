@@ -268,8 +268,8 @@ def skeletonizer(KP_global, EX_global, q):
                 return False
             if not success1:
                 return False  
-            image = cv2.rotate(image,cv2.ROTATE_90_CLOCKWISE)
-            image1 = cv2.rotate(image1,cv2.ROTATE_90_CLOCKWISE)
+            #image = cv2.rotate(image,cv2.ROTATE_180)
+            #image1 = cv2.rotate(image1,cv2.ROTATE_180)
             
              
             #due tipi di stichetr diversi quado le camere saranno montate stai pronto e usane uno.
@@ -283,25 +283,29 @@ def skeletonizer(KP_global, EX_global, q):
 
             
             
-            result = stitcher.stitch([image, image1])
-            if result is None:
+            sti = stitcher.stitch([image1, image])
+            if sti is None:
                 print("[INFO] homography could not be computed")
                 break
+            conc = np.concatenate((image,image1), axis= 1)
+            cv2.imshow('MediaPipeconc', conc)
             
             #assert status == 0 # Verify returned status is 'success'
+            sti = cv2.rotate(sti,cv2.ROTATE_90_CLOCKWISE)  
                 
             
 
 
             #sti = np.concatenate((image,image1[550:720, 0:480]), axis= 0)
             
-            sti = cv2.cvtColor(cv2.flip(result, 1), cv2.COLOR_BGR2RGB)
+            sti = cv2.cvtColor(cv2.flip(sti, 1), cv2.COLOR_BGR2RGB)
             #print("sti creted")
             
             # To improve performance, optionally mark the image as not writeable to
             # pass by reference.
             #vis.flags.writeable = False
             results = pose.process(sti)
+            
 
             # Draw the pose annotation on the image.
             sti.flags.writeable = True

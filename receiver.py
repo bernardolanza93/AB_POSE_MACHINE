@@ -24,9 +24,10 @@ def dump_buffer(s):
 
 def listen_for_TCP_string(string_from_tcp_ID):
 
-    port = 1025
-    ip = '127.0.0.1'
-
+    #port = 1025
+    #ip = '127.0.0.1'
+    port = 21001
+    ip = '192.168.10.1'
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -61,10 +62,12 @@ def main():
 
     # Set up socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    Raddr = '127.0.0.1'
+    #Raddr = '127.0.0.1'
+    #Rport = 5005
+    Raddr = '192.168.10.2'
     Rport = 5005
     s.bind((Raddr, Rport))
-    print("reciving config: IP = {}, PORT = {}. ".format(Raddr, Rport))
+    print("receiving config: IP = {}, PORT = {}. ".format(Raddr, Rport))
 
     dump_buffer(s)
 

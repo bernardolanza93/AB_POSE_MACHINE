@@ -14,15 +14,12 @@ class FrameSegment(object):
     Object to break down image frame segment
     if the size of image exceed maximum datagram size 
     """
-    # MAX_DGRAM = 2**16 ... for iOs operations should be less than 9216
-    MAX_DGRAM = 2 ** 13
-    MAX_IMAGE_DGRAM = MAX_DGRAM - 64  # extract 64 bytes in case UDP frame overflown
-
-    def __init__(self, sock, port, addr='127.0.0.1'):
+    MAX_DGRAM = 2**16
+    MAX_IMAGE_DGRAM = MAX_DGRAM - 64 # extract 64 bytes in case UDP frame overflown
+    def __init__(self, sock, port, addr='192.168.10.2'):
         self.s = sock
         self.port = port
         self.addr = addr
-        #print("sending config: IP = {}, PORT = {}. ".format(self.addr, self.port))
 
     def udp_frame(self, img):
         """ 
@@ -32,21 +29,20 @@ class FrameSegment(object):
         compress_img = cv2.imencode('.jpg', img)[1]
         dat = compress_img.tostring()
         size = len(dat)
-        count = math.ceil(size / self.MAX_IMAGE_DGRAM)
+        num_of_segments = math.ceil(size/(self.MAX_IMAGE_DGRAM))
         array_pos_start = 0
-        while count:
+        while num_of_segments:
             array_pos_end = min(size, array_pos_start + self.MAX_IMAGE_DGRAM)
-            self.s.sendto(struct.pack("B", count) +
-                          dat[array_pos_start:array_pos_end],
-                          (self.addr, self.port)
-                          )
-            tempString = "packet_i"
-            self.s.sendto(tempString.encode(), ('127.0.0.1', 5005))
+            self.s.sendto(struct.pack("B", num_of_segments) +
+                dat[array_pos_start:array_pos_end], 
+                (self.addr, self.port)
+                )
+            
             array_pos_start = array_pos_end
-            count -= 1
+            num_of_segments -= 1
 
 
-def send_status(port, status, ip='127.0.0.1'):
+def send_status(port, status, ip='192.168.10.2'):
     #if __name__ == "__main__":
         BUFFER_SIZE = 1024
 
@@ -77,3 +73,5 @@ def stream(img):
         fs.udp_frame(img)
 
         s.close()
+
+

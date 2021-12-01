@@ -9,7 +9,7 @@ from datetime import datetime
 import receiver
 import sender
 import statistics
-
+import queue
 
 def joint_distance_calculator(kps_to_render,kp):
     distance = []
@@ -27,7 +27,6 @@ def joint_distance_calculator(kps_to_render,kp):
        #((kp[segment[0]], kp[segment[1]]), (kp[segment[2]], kp[segment[3]])
         distance.append((math.sqrt(pow((xa-xb),2) + pow((ya-yb),2)))/normalizer)
     return distance
-
 
 
 def no_ex_cycle_control(string_from_tcp_ID,ex_string):
@@ -92,8 +91,6 @@ def KP_to_render_from_config_file(dictionary):
         kps = [int(x) for x in kps.split(",")]
         KPS_to_render.append(kps)
     dictionary["KPS_to_render"] = KPS_to_render
-    print("kps to render : after alias association",KPS_to_render)
-    print(" one kps to render : after alias", KPS_to_render[0])
 
     # print(dictionary)
     return dictionary
@@ -133,15 +130,23 @@ def ex_string_to_config_param(ex_string):
     return dictionary
 
 
-def wait_for_keypoints(queue):
-    while queue.empty():
-        print("no KP data aviable; queue empty")  # si triggera se non funziona piu lo skeleton
+def wait_for_keypoints(queuekp):
+    keypoints = []
 
-    keypoints = queue.get(False)
-    if not keypoints:
-        print("no valid kp")
-    else:
-        return keypoints
+    while not keypoints:
+        
+        try:
+            keypoints = queuekp.get(False)
+        except queue.Empty:
+            #print("no KP data aviable: queue empty")
+            pass
+
+        else:
+
+            if not keypoints:
+                print("no valid kp")
+            else:
+                return keypoints
 
 
 def check_for_string_in_memory(multiprocessing_value_slot):
@@ -195,6 +200,7 @@ def findAngle(p1, p2, p3):
     # print(angle)
 
     return angle
+
 
 
 def kp_geometry_analisys(kp, count, stage, dictionary):
@@ -285,12 +291,11 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
             print("no kps to render dictionary error, dictionary: {}".format(dictionary))
 
 
-
 def evaluator(EX_global, q,string_from_tcp_ID):
     # printing process id
     print("ID of process running evaluator: {}".format(os.getpid()))
 
-    time.sleep(1)
+    #time.sleep(3)
     kp = []
 
     stage = ["", ""]
@@ -301,7 +306,7 @@ def evaluator(EX_global, q,string_from_tcp_ID):
 
     while True:
 
-        time.sleep(0.1)
+        #time.sleep(0.5)
         ex_string_from_TCP = TCP_listen_check_4_string(string_from_tcp_ID,ex_string_from_TCP)
         #print("TCP ex ID : ", string_from_tcp_ID.value)
 
@@ -311,7 +316,7 @@ def evaluator(EX_global, q,string_from_tcp_ID):
             #print("count = {}".format(count))
 
         elif ex_string_from_TCP == "stop":
-            print("stop command detected")
+            #print("stop command detected")
             # refreshing parameter of exercise
             ex_string_from_TCP = ""
             count = [0, 0]
@@ -322,20 +327,20 @@ def evaluator(EX_global, q,string_from_tcp_ID):
             ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)
 
         elif ex_string_from_TCP == "pause":
-            print("pause command detected")
+            #print("pause command detected")
             # rimane comunque l esercizio in memoria
             ex_string_from_TCP = ""
-            print("count(pause) = {}".format(count))
+            #print("count(pause) = {}".format(count))
             ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)
 
         elif ex_string_from_TCP == "start":
             if EX_global.value != 0:
                 ex_string = check_for_string_in_memory(EX_global.value)
-                print("an exercise is under evaluation, starting...", ex_string)
+                #print("an exercise is under evaluation, starting...", ex_string)
                 #print("count = {}".format(count))
 
             else:
-                print("start command error: no exercise selected, waiting for a selection before start")
+                #print("start command error: no exercise selected, waiting for a selection before start")
                 ex_string_from_TCP = ""
                 #print("count = {}".format(count))
                 ex_string_from_TCP = no_ex_cycle_control(string_from_tcp_ID,ex_string_from_TCP)  # da togliere
@@ -343,14 +348,14 @@ def evaluator(EX_global, q,string_from_tcp_ID):
         else:
 
             EX_global.value = write_ex_string_in_shared_memory(ex_string_from_TCP)
-            print("{} string wrote in memory".format(ex_string_from_TCP))
-            print("EX_global.value", EX_global.value)
+            #print("{} string wrote in memory".format(ex_string_from_TCP))
+            #print("EX_global.value", EX_global.value)
 
         if EX_global.value != 0:
             if ex_string != "":
                 # controllo di aver letto con successo la memoria dopo il comando di start
 
-                print("read from memory: {}".format(ex_string))
+                #print("read from memory: {}".format(ex_string))
 
                 kp = wait_for_keypoints(q)
 
