@@ -11,6 +11,17 @@ import socket
 import imutils
 
 
+def undistort(img):
+    DIM=(480, 240)
+    K=np.array([[293.5116081746901, 0.0, 243.25387145248732], [0.0, 260.4055747091259, 104.82988114365413], [0.0, 0.0, 1.0]])
+    D=np.array([[-0.03576268944984472], [0.057197056735017134], [-0.16392042989226446], [0.12922000339789327]])
+    
+    h,w = img.shape[:2]
+    map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), K, DIM, cv2.CV_16SC2)
+    undistorted_img = cv2.remap(img, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    return undistorted_img
+
+
 class Stitcher:
   def __init__(self):
   # determine if we are using OpenCV v3.X and initialize the
@@ -277,18 +288,23 @@ def skeletonizer(KP_global, EX_global, q):
             
             stitcher = cv2.createStitcher(False)
             sti = stitcher.stitch((image,image1))
+
             '''
+            image=undistort(image)
+            image1=undistort(image1)
+            
             
             
 
-            
-            
-            sti = stitcher.stitch([image1, image])
+            #da distattivare a camere montate
+            sti = np.concatenate((image,image1), axis= 1)
+            #da attivare a camere montate
+            #sti = stitcher.stitch([image1, image])
             if sti is None:
                 print("[INFO] homography could not be computed")
                 break
-            conc = np.concatenate((image,image1), axis= 1)
-            cv2.imshow('MediaPipeconc', conc)
+            
+            #cv2.imshow('MediaPipeconc', conc)
             
             #assert status == 0 # Verify returned status is 'success'
             sti = cv2.rotate(sti,cv2.ROTATE_90_CLOCKWISE)  

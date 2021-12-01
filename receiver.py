@@ -27,7 +27,7 @@ def listen_for_TCP_string(string_from_tcp_ID):
     #port = 1025
     #ip = '127.0.0.1'
     port = 21001
-    ip = '192.168.10.1'
+    ip = '192.168.10.1' #mettere localhost per togliere errore '127.0.0.1'
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -65,7 +65,7 @@ def main():
     #Raddr = '127.0.0.1'
     #Rport = 5005
     Raddr = '192.168.10.2'
-    Rport = 5005
+    Rport = 21001
     s.bind((Raddr, Rport))
     print("receiving config: IP = {}, PORT = {}. ".format(Raddr, Rport))
 
