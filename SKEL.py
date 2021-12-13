@@ -247,15 +247,16 @@ def skeletonizer(KP_global, EX_global, q):
 
     cap = cv2.VideoCapture(gst_str1, cv2.CAP_GSTREAMER)
 
-    cap1 = cv2.VideoCapture(gst_str2, cv2.CAP_GSTREAMER) 
+    #cap1 = cv2.VideoCapture(gst_str2, cv2.CAP_GSTREAMER) 
     
-    print("now i show you")
+    #print("now i show you")
     frame_width2 = int(cap.get(3))
     frame_height2 = int(cap.get(4))
-    frame_width1 = int(cap1.get(3))
-    frame_height1 = int(cap1.get(4))
-    frame_width = int(cap1.get(3))
-    frame_height = int(cap1.get(4))*2
+
+    #frame_width1 = int(cap1.get(3))
+    #frame_height1 = int(cap1.get(4))
+    #frame_width = int(cap1.get(3))
+    #frame_height = int(cap1.get(4))*2
 
     mp_drawing = mp.solutions.drawing_utils
     mp_pose = mp.solutions.pose
@@ -267,18 +268,18 @@ def skeletonizer(KP_global, EX_global, q):
 	#smooth_landmark= True,
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5) as pose:
-        while cap.isOpened() and cap1.isOpened():
+        while cap.isOpened() :
 
             start = time.time()
             success, image = cap.read()
-            success1, image1 = cap1.read()
+            #success1, image1 = cap1.read()
 
             if not success:
                 # print("Ignoring empty camera frame.")
                 # If loading a video, use 'break' instead of 'continue'.
                 return False
-            if not success1:
-                return False  
+            #if not success1:
+                #return False  
             #image = cv2.rotate(image,cv2.ROTATE_180)
             #image1 = cv2.rotate(image1,cv2.ROTATE_180)
             
@@ -291,15 +292,23 @@ def skeletonizer(KP_global, EX_global, q):
 
             '''
             image=undistort(image)
-            image1=undistort(image1)
+            #image1=undistort(image1)
+            #print("undistorted")
+
             
             
             
 
-            #da distattivare a camere montate
-            sti = np.concatenate((image,image1), axis= 1)
-            #da attivare a camere montate
+            #camere smontate
+            #sti = np.concatenate((image,image1), axis= 1)
+            #camere montate stitcher
             #sti = stitcher.stitch([image1, image])
+            #monocamere
+            #
+            sti = image  
+
+
+
             if sti is None:
                 print("[INFO] homography could not be computed")
                 break
@@ -307,7 +316,7 @@ def skeletonizer(KP_global, EX_global, q):
             #cv2.imshow('MediaPipeconc', conc)
             
             #assert status == 0 # Verify returned status is 'success'
-            sti = cv2.rotate(sti,cv2.ROTATE_90_CLOCKWISE)  
+            
                 
             
 
@@ -320,7 +329,9 @@ def skeletonizer(KP_global, EX_global, q):
             # To improve performance, optionally mark the image as not writeable to
             # pass by reference.
             #vis.flags.writeable = False
+            #print("preproc")
             results = pose.process(sti)
+            #print("posproc")
             
 
             # Draw the pose annotation on the image.
@@ -329,7 +340,7 @@ def skeletonizer(KP_global, EX_global, q):
             end = time.time()
             seconds = end - start
             fps = 1 / seconds
-            cv2.putText(sti, 'FPS: {}'.format(int(fps)), (frame_width - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
+            cv2.putText(sti, 'FPS: {}'.format(int(fps)), (frame_width2 - 190, 30), cv2.FONT_HERSHEY_COMPLEX, 1,
                         255)
             # Render detections
             mp_drawing.draw_landmarks(sti, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,

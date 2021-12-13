@@ -42,7 +42,11 @@ def listen_for_TCP_string(string_from_tcp_ID):
 
 
         seg = seg.decode('utf-8')
-        print("FROM TCP SEGB:_",seg)
+        seg = str(seg)
+        
+        seg = seg[:-1]
+        
+        print("FROM TCP SEGB:",seg)
 
         if seg == "stop":
             string_from_tcp_ID.value = 0

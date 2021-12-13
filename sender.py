@@ -26,6 +26,15 @@ class FrameSegment(object):
         Compress image and Break down
         into data segments 
         """
+
+        """ resize image before send
+        scale_percentage=.50
+        width=int(img.shape[1]*scale_percentage)
+        height=int(img.shape[0]*scale_percentage)
+
+        resized_img=cv2.resize(img,(width,height))
+        compress_img = cv2.imencode('.jpg', resized_img)[1]
+        """
         compress_img = cv2.imencode('.jpg', img)[1]
         dat = compress_img.tostring()
         size = len(dat)

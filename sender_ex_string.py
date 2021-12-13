@@ -16,9 +16,9 @@ def main():
 
 
 
-    ip = '127.0.0.1'
+    ip = '192.168.10.1'
     status = ["double_curl", "start","pause","start", "stop", "curl", "start", "pause","start", "stop"]
-    port = 1025
+    port = 21001
     print("sending config: IP = {}, PORT = {}. ".format(ip, port))
 
 

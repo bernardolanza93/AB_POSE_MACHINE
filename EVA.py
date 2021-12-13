@@ -42,7 +42,7 @@ def ex_string_to_ID(ex_string):
     config.read('exercise_info.ini')
     sections = config.sections()
     # print("sections are : {}".format(sections))
-
+    ex_string=ex_string.rstrip("\n")
     for exercise in sections:
 
         if exercise == ex_string:
@@ -203,7 +203,7 @@ def findAngle(p1, p2, p3):
 
 
 
-def kp_geometry_analisys(kp, count, stage, dictionary):
+def kp_geometry_analisys(kp, count, stage, per, dictionary):
     if kp == []:
         print("no KP aviable")
     else:
@@ -286,7 +286,7 @@ def kp_geometry_analisys(kp, count, stage, dictionary):
                 # print("angle : {}".format(angle))
                 # print("stage : {}".format(stage))
 
-                return count, stage
+                return count, stage , per
         else:
             print("no kps to render dictionary error, dictionary: {}".format(dictionary))
 
@@ -299,6 +299,7 @@ def evaluator(EX_global, q,string_from_tcp_ID):
     kp = []
 
     stage = ["", ""]
+    per = [0,0]
 
     count = [0, 0]
     ex_string_from_TCP = ""  # comando arrivato dalla tcp
@@ -361,7 +362,10 @@ def evaluator(EX_global, q,string_from_tcp_ID):
 
                 config_param_dictionary = ex_string_to_config_param(ex_string)
 
-                count, stage = kp_geometry_analisys(kp, count, stage, config_param_dictionary)
+                count, stage , per = kp_geometry_analisys(kp, count, stage,per, config_param_dictionary)
                 #print("count. ",count)
 
-                sender.send_status(1200, str(max(count)),'127.0.0.1')
+                packet = str(max(count)) + "," + str(int(max(per)))   
+                print("packet", packet)             
+                
+                sender.send_status(21011, packet,'192.168.10.2')

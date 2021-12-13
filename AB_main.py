@@ -50,6 +50,7 @@ if __name__ == "__main__":
     # printing main program process id
     print("ID of main process: {}".format(os.getpid()))
     #A variant of Queue that retrieves most recently added entriesfirst(last in, firstout).
+    time.sleep(5)
     q = multiprocessing.Queue(maxsize=1)
 
 
