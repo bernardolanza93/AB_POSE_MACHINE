@@ -287,8 +287,8 @@ def skeletonizer(KP_global, EX_global, q):
             #due tipi di stichetr diversi quado le camere saranno montate stai pronto e usane uno.
             '''
             
-            stitcher = cv2.createStitcher(False)
-            sti = stitcher.stitch((image,image1))
+            #stitcher = cv2.createStitcher(False)
+            #sti = stitcher.stitch((image,image1))
 
             '''
             image=undistort(image)
@@ -328,7 +328,7 @@ def skeletonizer(KP_global, EX_global, q):
             
             # To improve performance, optionally mark the image as not writeable to
             # pass by reference.
-            #vis.flags.writeable = False
+            vis.flags.writeable = False
             #print("preproc")
             results = pose.process(sti)
             #print("posproc")
